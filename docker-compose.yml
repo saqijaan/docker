@@ -1,0 +1,59 @@
+version: '2.0'
+services:
+
+  #PHP Service
+  app:
+    build:
+      context: .
+      dockerfile: .docker/Dockerfile
+    image: ${COMPOSE_PROJECT_NAME}/php
+    container_name: ${COMPOSE_PROJECT_NAME}_php_service
+    restart: unless-stopped
+    tty: true
+    volumes:
+       - ./:/var/www/html/
+       - ./.docker/supervisor:/etc/supervisor/conf.d
+    environment:
+      SERVICE_NAME: ${COMPOSE_PROJECT_NAME}_php_service
+      SERVICE_TAGS: dev
+    working_dir: /var/www/html/
+    networks:
+      - app-network
+
+  #Nginx Service
+  webserver:
+    image: nginx:alpine
+    container_name: ${COMPOSE_PROJECT_NAME}_webserver
+    restart: unless-stopped
+    tty: true
+    volumes:
+       - ./:/var/www/html
+       - .docker/nginx.conf:/etc/nginx/conf.d/default.conf
+    ports:
+      - "${HTTP_PORT}:80"
+      - "${HTTPS_PORT}:443"
+    networks:
+      - app-network
+
+  #MySQL Service
+  db:
+    image: mysql:5.7.32
+    container_name: ${COMPOSE_PROJECT_NAME}_db
+    restart: unless-stopped
+    tty: true
+    volumes:
+      - ./.mysql:/var/lib/mysql
+    ports:
+      - "${MYSQL_PORT}:3306"
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_ROOT_PASSWORD: 'MYSQL_ROOT_PASSWORD'
+      SERVICE_TAGS: dev
+      SERVICE_NAME: ${COMPOSE_PROJECT_NAME}_mysql
+    networks:
+      - app-network
+
+#Docker Networks
+networks:
+  app-network:
+    driver: bridge
