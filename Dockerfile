@@ -1,6 +1,4 @@
 FROM php:7.4-fpm
-# Copy composer.lock and composer.json into the working directory
-COPY composer.lock composer.json /var/www/html/
  
 # Set working directory
 WORKDIR /var/www/html/
@@ -41,7 +39,7 @@ RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local
 #         /var/www/html/bootstrap/cache
 # RUN composer install
 RUN apt-get update && apt-get install supervisor cron -y
-COPY .docker/start-container.sh /usr/bin/start-container
+COPY ./start-container.sh /usr/bin/start-container
 RUN chmod +x /usr/bin/start-container
 
 RUN useradd -u1000 docker_app_user

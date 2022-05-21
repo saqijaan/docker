@@ -11,4 +11,3 @@
 5. If necessory you can make updated to docker-compose and docker file too.
 
 6. supervisor is included in this configurations and you can add more files to super visor directory. A sample config file is already included.
-
