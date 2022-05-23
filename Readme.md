@@ -1,6 +1,6 @@
 # Setup Instructions
 
-Remove .git directory from docker/.git use `rm docker/.git`
+Remove .git directory from docker/.git use `rm docker/.git -rf`
 
 1. Clone package to your project root and open terminal in docker folder.
 
