@@ -1,5 +1,7 @@
 # Setup Instructions
 
+Remove .git directory from docker/.git use `rm docker/.git`
+
 1. Clone package to your project root and open terminal in docker folder.
 
 2. Update your project configurations in .env file
