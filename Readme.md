@@ -4,7 +4,7 @@ Remove .git directory from docker/.git use `rm docker/.git -rf`
 
 1. Clone package to your project root and open terminal in docker folder.
 
-2. Update your project configurations in .env file
+2. Update your project configurations in .env file. Do not wrap values in single or double quoutes. 
 
 3. Run `docker-compose build`.
 
