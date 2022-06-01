@@ -44,6 +44,8 @@ RUN chmod +x /usr/bin/start-container
 
 RUN useradd -u1000 docker_app_user
 RUN adduser www-data docker_app_user
+RUN mkdir /home/docker_app_user
+RUN chown -R docker_app_user:docker_app_user /home/docker_app_user
 
 RUN echo "* * * * * root php /var/www/html/artisan schedule:run >> /var/www/html/storage/logs/cron.log 2>&1" >> /etc/crontab
 
