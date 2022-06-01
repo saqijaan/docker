@@ -13,6 +13,7 @@ services:
     volumes:
        - ../:/var/www/html/
        - ./supervisor:/etc/supervisor/conf.d
+       - /home/docker_app_user
        - ./php.ini:/usr/local/etc/php/conf.d/${COMPOSE_PROJECT_NAME}_php.ini
     environment:
       SERVICE_NAME: ${COMPOSE_PROJECT_NAME}_php_service
