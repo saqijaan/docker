@@ -30,6 +30,8 @@ services:
     volumes:
        - ../:/var/www/html
        - ./nginx.conf:/etc/nginx/templates/default.conf.template
+       #  - /etc/letsencrypt/live/{project_name}/fullchain.pem:/etc/cert/fullchain.pem
+       #  - /etc/letsencrypt/live/{project_name}/privkey.pem:/etc/cert/privkey.pem
     ports:
       - "${HTTP_PORT}:80"
       # - "${HTTPS_PORT}:443"
