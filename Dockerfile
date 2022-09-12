@@ -18,28 +18,29 @@ RUN apt-get update && apt-get install -y \
     git \
     libonig-dev \
     curl \
-    mariadb-client \
-    npm
- 
+    mariadb-client
+
+# Install npm 
+RUN apt-get update && apt-get install -y npm && npm install -g n && npm install -g npm@latest
+
+RUN n lts
+
 # Clear cache
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
  
+# Install composer (php package manager)
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
+# Install phpredis extension to use redis as queue server for laravel project
+RUN curl https://github.com/FriendsOfPHP/pickle/releases/latest/download/pickle.phar --output pickle.phar && chmod +x pickle.phar && mv pickle.phar /usr/bin/pickle
+RUN pecl install igbinary && docker-php-ext-enable igbinary
+RUN pecl install redis && docker-php-ext-enable redis
+
 # Install extensions for php
 RUN docker-php-ext-install pdo_mysql mbstring zip exif
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg
 RUN docker-php-ext-install gd
- 
-# Install composer (php package manager)
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
- 
-# Copy existing application directory contents to the working directory
-# COPY . /var/www/html
- 
-# Assign permissions of the working directory to the www-data user
-# RUN chown -R www-data:www-data \
-#         /var/www/html/storage \
-#         /var/www/html/bootstrap/cache
-# RUN composer install
+
 RUN apt-get update && apt-get install supervisor cron -y
 COPY ./start-container.sh /usr/bin/start-container
 RUN chmod +x /usr/bin/start-container
