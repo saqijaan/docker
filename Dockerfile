@@ -41,6 +41,7 @@ RUN docker-php-ext-install pdo_mysql mbstring zip exif
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg
 RUN docker-php-ext-install gd
 RUN docker-php-ext-install pcntl
+RUN pecl install xdebug && docker-php-ext-enable xdebug
 
 RUN apt-get update && apt-get install supervisor cron -y
 COPY ./start-container.sh /usr/bin/start-container
