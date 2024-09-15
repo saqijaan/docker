@@ -1,60 +1,60 @@
-FROM php:8.1-fpm
- 
-# Set working directory
-WORKDIR /var/www/html/
- 
-# Install dependencies for the operating system software
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    libpng-dev \
-    libjpeg62-turbo-dev \
-    libfreetype6-dev \
-    locales \
-    zip \
-    jpegoptim optipng pngquant gifsicle \
-    vim \
-    libzip-dev \
-    unzip \
-    git \
-    libonig-dev \
-    curl \
-    mariadb-client
+# Stage 1: Build Stage (for compiling necessary extensions)
+FROM php:fpm-alpine3.20 AS builder
 
-# Install npm 
-RUN apt-get update && apt-get install -y npm && npm install -g n && npm install -g npm@latest
+# Install dependencies for building extensions
+RUN apk add --no-cache autoconf libpng-dev zip libzip-dev unzip git curl \
+    build-base freetype-dev jpeg-dev libjpeg-turbo-dev linux-headers supervisor
 
-RUN n lts
+# Install and enable PHP extensions
+RUN docker-php-ext-install pdo_mysql zip exif pcntl \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install gd
 
-# Clear cache
-RUN apt-get clean && rm -rf /var/lib/apt/lists/*
- 
-# Install composer (php package manager)
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+# Install Redis and Igbinary extensions
+RUN curl https://github.com/FriendsOfPHP/pickle/releases/latest/download/pickle.phar --output pickle.phar \
+    && chmod +x pickle.phar \
+    && mv pickle.phar /usr/bin/pickle \
+    && pecl install igbinary \
+    && pecl install redis \
+    && docker-php-ext-enable igbinary redis \
+    && rm -f /usr/bin/pickle
 
-# Install phpredis extension to use redis as queue server for laravel project
-RUN curl https://github.com/FriendsOfPHP/pickle/releases/latest/download/pickle.phar --output pickle.phar && chmod +x pickle.phar && mv pickle.phar /usr/bin/pickle
-RUN pecl install igbinary && docker-php-ext-enable igbinary
-RUN pecl install redis && docker-php-ext-enable redis
+# Install Xdebug and PCOV for development, remove in production if needed
+RUN pecl install xdebug pcov \
+    && docker-php-ext-enable xdebug pcov
 
-# Install extensions for php
-RUN docker-php-ext-install pdo_mysql mbstring zip exif
-RUN docker-php-ext-configure gd --with-freetype --with-jpeg
-RUN docker-php-ext-install gd
-RUN docker-php-ext-install pcntl
-RUN pecl install xdebug && docker-php-ext-enable xdebug
+RUN docker-php-ext-install opcache
 
-RUN apt-get update && apt-get install supervisor cron -y
-COPY ./start-container.sh /usr/bin/start-container
-RUN chmod +x /usr/bin/start-container
+# Install Composer
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
+    && composer clear-cache
 
-RUN useradd -u1000 docker_app_user
-RUN adduser www-data docker_app_user
-RUN mkdir /home/docker_app_user
-RUN chown -R docker_app_user:docker_app_user /home/docker_app_user
+# Stage 2: Production Stage
+FROM php:fpm-alpine3.20
 
-RUN echo "* * * * * root php /var/www/html/artisan schedule:run >> /var/www/html/storage/logs/cron.log 2>&1" >> /etc/crontab
+#Install runtime dependencies only
+RUN apk add --no-cache freetype libpng jpeg libjpeg-turbo libzip
 
-# Expose port 9000 and start php-fpm server (for FastCGI Process Manager)
+# Copy necessary files from the build stage
+COPY --from=builder /usr/local/lib/php/extensions /usr/local/lib/php/extensions
+COPY --from=builder /usr/local/etc/php/conf.d /usr/local/etc/php/conf.d
+COPY --from=builder /usr/local/bin/composer /usr/local/bin/composer
+
+# Set up user and permissions
+RUN addgroup -S dev \
+    && adduser -u1000 dev -h /home/dev -s /bin/sh -S -G dev \
+    && adduser www-data dev \
+    && chown -R dev:dev /home/dev
+
+ARG GL_TOKEN
+
+# Set composer token as dev user
+USER dev
+RUN composer config --global gitlab-token.gitlab.digitaltolk.net "$GL_TOKEN"
+USER root
+
+# Expose PHP-FPM port
 EXPOSE 9000
-# CMD [ "php-fpm" ]
-ENTRYPOINT ["start-container" ]
+
+# Start the container
+CMD ["php-fpm"]
